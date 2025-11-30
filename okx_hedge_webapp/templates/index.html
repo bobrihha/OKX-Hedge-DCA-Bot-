@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Панель управления ботом</title>
+    <style>
+        body { font-family: sans-serif; margin: 2em; background-color: #f4f4f9; color: #333; }
+        .container { max-width: 800px; margin: auto; background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { color: #5a5a5a; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-section { background: #fdfdfd; padding: 1.5em; border: 1px solid #eee; border-radius: 5px; }
+        label { display: block; margin-bottom: 0.5em; font-weight: bold; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 8px; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; }
+        .controls button { padding: 10px 20px; border: none; border-radius: 5px; color: #fff; cursor: pointer; }
+        .start-btn { background-color: #28a745; }
+        .stop-btn { background-color: #dc3545; }
+        .status { padding: 10px; border-radius: 5px; color: #fff; text-align: center; }
+        .status-Running { background-color: #17a2b8; }
+        .status-Stopped { background-color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="user-info" style="text-align: right; margin-bottom: 1em;">
+            Вошли как <strong>{{ current_user.username }}</strong> | <a href="{{ url_for('logout') }}">Выйти</a>
+        </div>
+
+        <h1>Панель управления ботом</h1>
+        <div class="status {{ 'status-running' if status == 'Running' else 'status-stopped' }}">
+            Текущий статус: <strong>{{ 'Работает' if status == 'Running' else 'Остановлен' }}</strong>
+        </div>
+
+        <form action="/start" method="post" style="margin-top: 2em;">
+            <h2>Конфигурация</h2>
+            
+            <div class="form-grid">
+                <div class="form-section">
+                    <h3>API Ключи</h3>
+                    <label for="api_key">API Key</label>
+                    <input type="text" id="api_key" name="API_KEY" value="{{ config.get('API_KEY', '') }}">
+                    
+                    <label for="api_secret">API Secret</label>
+                    <input type="text" id="api_secret" name="API_SECRET_KEY" value="{{ config.get('API_SECRET_KEY', '') }}">
+                    
+                    <label for="api_passphrase">API Passphrase</label>
+                    <input type="text" id="api_passphrase" name="API_PASSPHRASE" value="{{ config.get('API_PASSPHRASE', '') }}">
+                </div>
+
+                <div class="form-section">
+                    <h3>Общие настройки</h3>
+                    <label for="trading_pair">Торговая пара</label>
+                    <input type="text" id="trading_pair" name="TRADING_PAIR" value="{{ config.get('TRADING_PAIR', '') }}">
+
+                    <label for="leverage">Кредитное плечо</label>
+                    <input type="number" id="leverage" name="LEVERAGE" value="{{ config.get('LEVERAGE', 10) }}">
+
+                    <label for="poll_interval">Интервал опроса (сек)</label>
+                    <input type="number" id="poll_interval" name="BOT_POLL_INTERVAL" value="{{ config.get('BOT_POLL_INTERVAL', 5) }}">
+
+                    <label for="max_orders">Макс. ордеров в цикле</label>
+                    <input type="number" id="max_orders" name="MAX_ORDERS_IN_CYCLE" value="{{ config.get('MAX_ORDERS_IN_CYCLE', 5) }}">
+
+                    <label for="dry_run">Режим симуляции</label>
+                    <input type="checkbox" id="dry_run" name="DRY_RUN_MODE" {{ 'checked' if config.get('DRY_RUN_MODE') }}>
+                </div>
+
+                <div class="form-section">
+                    <h3>LONG Стратегия</h3>
+                    <label for="long_enabled">Включена</label>
+                    <input type="checkbox" id="long_enabled" name="LONG_ENABLED" {{ 'checked' if config.get('LONG_ENABLED') }}>
+
+                    <label for="long_margin_perc">% маржи на ордер</label>
+                    <input type="number" step="0.01" id="long_margin_perc" name="LONG_MARGIN_PER_ORDER_PERCENTAGE" value="{{ config.get('LONG_MARGIN_PER_ORDER_PERCENTAGE', 0.05) }}">
+
+                    <label for="long_tp_perc">% тейк-профита</label>
+                    <input type="number" step="0.0001" id="long_tp_perc" name="LONG_TAKE_PROFIT_PERCENTAGE" value="{{ config.get('LONG_TAKE_PROFIT_PERCENTAGE', 0.001) }}">
+
+                    <label for="long_entry_fall_perc">% падения для усреднения</label>
+                    <input type="number" step="0.0001" id="long_entry_fall_perc" name="LONG_ENTRY_PRICE_FALL_PERCENTAGE" value="{{ config.get('LONG_ENTRY_PRICE_FALL_PERCENTAGE', 0.005) }}">
+                </div>
+
+                <div class="form-section">
+                    <h3>SHORT Стратегия</h3>
+                    <label for="short_enabled">Включена</label>
+                    <input type="checkbox" id="short_enabled" name="SHORT_ENABLED" {{ 'checked' if config.get('SHORT_ENABLED') }}>
+
+                    <label for="short_margin_perc">% маржи на ордер</label>
+                    <input type="number" step="0.01" id="short_margin_perc" name="SHORT_MARGIN_PER_ORDER_PERCENTAGE" value="{{ config.get('SHORT_MARGIN_PER_ORDER_PERCENTAGE', 0.05) }}">
+
+                    <label for="short_tp_perc">% тейк-профита</label>
+                    <input type="number" step="0.0001" id="short_tp_perc" name="SHORT_TAKE_PROFIT_PERCENTAGE" value="{{ config.get('SHORT_TAKE_PROFIT_PERCENTAGE', 0.001) }}">
+
+                    <label for="short_entry_rise_perc">% роста для усреднения</label>
+                    <input type="number" step="0.0001" id="short_entry_rise_perc" name="SHORT_ENTRY_PRICE_RISE_PERCENTAGE" value="{{ config.get('SHORT_ENTRY_PRICE_RISE_PERCENTAGE', 0.005) }}">
+                </div>
+            </div>
+
+            <div class="controls" style="margin-top: 2em; display: flex; gap: 10px;">
+                <button type="submit" class="start-btn">Сохранить и запустить</button>
+        </form>
+        <form action="/stop" method="post">
+            <button type="submit" class="stop-btn">Остановить</button>
+        </form>
+    </div>
+
+    {% if log_file %}
+    <div class="logs-container" style="margin-top: 2em;">
+        <h2>Журнал событий</h2>
+        <textarea id="logs-box" readonly style="width: 100%; height: 300px; background-color: #222; color: #0f0; font-family: monospace; padding: 10px; border-radius: 5px;"></textarea>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const logsBox = document.getElementById('logs-box');
+            const botStatus = "{{ status }}";
+
+            const fetchLogs = () => {
+                fetch("{{ url_for('get_logs') }}")
+                    .then(response => response.json())
+                    .then(data => {
+                        logsBox.value = data.logs;
+                        logsBox.scrollTop = logsBox.scrollHeight; // Auto-scroll to bottom
+                    });
+            };
+
+            // Fetch logs immediately on page load
+            fetchLogs();
+
+            // If bot is running, fetch logs every 5 seconds
+            if (botStatus === 'Running') {
+                setInterval(fetchLogs, 5000);
+            }
+        });
+    </script>
+    {% endif %}
+</body>
+</html>
