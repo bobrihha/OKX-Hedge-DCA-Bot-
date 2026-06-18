@@ -7,3 +7,14 @@ venv/
 .env
 .vscode/
 *.log
+.env.*
+*.key
+*.pem
+*credentials*.json
+service_account.json
+secret.key
+*.db
+*.sqlite
+*.sqlite3
+.venv/
+node_modules/
